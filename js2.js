@@ -886,6 +886,17 @@ var Model = {
                             ids = [0];
                         }
 
+                        var n = 0;
+                        var stockCollection = Model.getFromStore('stock.depot.' + depotId);
+
+                        var done = function() {
+                            if (++n == 3) {
+                                store.set('products.all', collection);
+                                store.set('stock.depot.' + depotId, stockCollection);
+                                yield(res, collection.count);
+                            }
+                        };
+
                         Storage.request({
                             type: 'POST',
                             resource: 'product-price',
@@ -899,56 +910,120 @@ var Model = {
                                     }
                                 });
 
-                                Storage.request({
-                                    type: 'POST',
-                                    resource: 'product-stock',
-                                    data: { 
-                                        productIds: ids,
-                                        depotId: depotId
-                                    },
-                                    success: function(resp) {
-    
-                                        var stockCollection = Model.getFromStore('stock.depot.' + depotId);
+                                done();
 
-                                        _.each(resp, function(item) {
-                                            var product = _store[item.productId];
-                                            if (product && item.quantity) {
-                                                product.stock[depotId] = item.quantity;
-                                            }
-                                            // Insert item into stock offline store
-                                            if (item.id) {
-                                                stockCollection.store[item.id] = item;
-                                            }
-                                        });
-
-                                        Storage.request({
-                                            type: 'POST',
-                                            resource: 'product-limit',
-                                            data: { productIds: ids },
-                                            success: function(resp) {
-
-                                                _.each(resp, function(item) {
-                                                    var product = _store[item.productId];
-                                                    if (product && item.categoryId) {
-                                                        product.limit[item.categoryId] = item.limit;
-                                                    }
-                                                });
- 
-                                                store.set('products.all', collection);
-                                                store.set('stock.depot.' + depotId, stockCollection);
-                                                yield(res, collection.count);
-    
-                                            },
-                                            error: onError
-                                        });
-
-                                    },
-                                    error: onError
-                                });
-            
                             },
                             error: onError
                         });
+
+                        Storage.request({
+                            type: 'POST',
+                            resource: 'product-stock',
+                            data: { 
+                                productIds: ids,
+                                depotId: depotId
+                            },
+                            success: function(resp) {
+    
+                                _.each(resp, function(item) {
+                                    var product = _store[item.productId];
+                                    if (product && item.quantity) {
+                                        product.stock[depotId] = item.quantity;
+                                    }
+                                    // Insert item into stock offline store
+                                    if (item.id) {
+                                        stockCollection.store[item.id] = item;
+                                    }
+                                });
+
+                                done();
+
+                            },
+                            error: onError
+                        });
+
+                        Storage.request({
+                            type: 'POST',
+                            resource: 'product-limit',
+                            data: { productIds: ids },
+                            success: function(resp) {
+
+                                _.each(resp, function(item) {
+                                    var product = _store[item.productId];
+                                    if (product && item.categoryId) {
+                                        product.limit[item.categoryId] = item.limit;
+                                    }
+                                });
+ 
+                                done();
+    
+                            },
+                            error: onError
+                        });
+ 
+                        //Storage.request({
+                        //    type: 'POST',
+                        //    resource: 'product-price',
+                        //    data: { productIds: ids },
+                        //    success: function(resp) {
+                    
+                        //        _.each(resp, function(item) {
+                        //            var product = _store[item.productId];
+                        //            if (product && item.price) {
+                        //                product.price[item.priceCatId] = item.price;
+                        //            }
+                        //        });
+
+                        //        Storage.request({
+                        //            type: 'POST',
+                        //            resource: 'product-stock',
+                        //            data: { 
+                        //                productIds: ids,
+                        //                depotId: depotId
+                        //            },
+                        //            success: function(resp) {
+    
+                        //                var stockCollection = Model.getFromStore('stock.depot.' + depotId);
+
+                        //                _.each(resp, function(item) {
+                        //                    var product = _store[item.productId];
+                        //                    if (product && item.quantity) {
+                        //                        product.stock[depotId] = item.quantity;
+                        //                    }
+                        //                    // Insert item into stock offline store
+                        //                    if (item.id) {
+                        //                        stockCollection.store[item.id] = item;
+                        //                    }
+                        //                });
+
+                        //                Storage.request({
+                        //                    type: 'POST',
+                        //                    resource: 'product-limit',
+                        //                    data: { productIds: ids },
+                        //                    success: function(resp) {
+
+                        //                        _.each(resp, function(item) {
+                        //                            var product = _store[item.productId];
+                        //                            if (product && item.categoryId) {
+                        //                                product.limit[item.categoryId] = item.limit;
+                        //                            }
+                        //                        });
+ 
+                        //                        store.set('products.all', collection);
+                        //                        store.set('stock.depot.' + depotId, stockCollection);
+                        //                        yield(res, collection.count);
+    
+                        //                    },
+                        //                    error: onError
+                        //                });
+
+                        //            },
+                        //            error: onError
+                        //        });
+            
+                        //    },
+                        //    error: onError
+                        //});
 
                     },
                     error: onError
