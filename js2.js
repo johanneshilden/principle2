@@ -850,185 +850,39 @@ var Model = {
             offset = (page - 1) * pageSize;
  
         var collection = Model.getFromStore('products.all');
+        var stockCollection = Model.getFromStore('stock.depot.' + depotId);
     
         var onError = Model.errorHandler.bind(this, collection, page, pageSize, yield, offline);
-
+ 
         Storage.request({
-            type: 'GET',
-            resource:  'product/count',
+            type: 'POST',
+            resource:  'product-collection',
+            data: {
+                pageSize: pageSize,
+                depotId: depotId,
+                page: page
+            },
             success: function(resp) {
-    
-                collection.count = resp.count;
-    
-                Storage.request({
-                    type: 'GET',
-                    resource: 'product/limit/' + pageSize + '/offset/' + offset,
-                    success: function(resp) {
 
-                        var _store = collection.store || {},
-                            index = collection.index || [],
-                            i = offset,
-                            ids = [], 
-                            res = [];
-    
-                        _.each(resp, function(item) {
-                            var current = _store[item.id] || {};
-                            item.stock = current.stock || {};
-                            item.price = current.price || {};
-                            item.limit = current.limit || {};
-                            _store[item.id] = item;
-                            index[i++] = item.id;
-                            ids.push(item.id);
-                            res.push(item);
-                        });
+                var obj = JSON.parse(resp),
+                    i = offset;
 
-                        if (!ids.length) {
-                            ids = [0];
-                        }
+                collection.count = obj.count;
 
-                        var n = 0;
-                        var stockCollection = Model.getFromStore('stock.depot.' + depotId);
-
-                        var done = function() {
-                            if (++n == 3) {
-                                store.set('products.all', collection);
-                                store.set('stock.depot.' + depotId, stockCollection);
-                                yield(res, collection.count);
-                            }
-                        };
-
-                        Storage.request({
-                            type: 'POST',
-                            resource: 'product-price',
-                            data: { productIds: ids },
-                            success: function(resp) {
-                    
-                                _.each(resp, function(item) {
-                                    var product = _store[item.productId];
-                                    if (product && item.price) {
-                                        product.price[item.priceCatId] = item.price;
-                                    }
-                                });
-
-                                done();
-
-                            },
-                            error: onError
-                        });
-
-                        Storage.request({
-                            type: 'POST',
-                            resource: 'product-stock',
-                            data: { 
-                                productIds: ids,
-                                depotId: depotId
-                            },
-                            success: function(resp) {
-    
-                                _.each(resp, function(item) {
-                                    var product = _store[item.productId];
-                                    if (product && item.quantity) {
-                                        product.stock[depotId] = item.quantity;
-                                    }
-                                    // Insert item into stock offline store
-                                    if (item.id) {
-                                        stockCollection.store[item.id] = item;
-                                    }
-                                });
-
-                                done();
-
-                            },
-                            error: onError
-                        });
-
-                        Storage.request({
-                            type: 'POST',
-                            resource: 'product-limit',
-                            data: { productIds: ids },
-                            success: function(resp) {
-
-                                _.each(resp, function(item) {
-                                    var product = _store[item.productId];
-                                    if (product && item.categoryId) {
-                                        product.limit[item.categoryId] = item.limit;
-                                    }
-                                });
- 
-                                done();
-    
-                            },
-                            error: onError
-                        });
- 
-                        //Storage.request({
-                        //    type: 'POST',
-                        //    resource: 'product-price',
-                        //    data: { productIds: ids },
-                        //    success: function(resp) {
-                    
-                        //        _.each(resp, function(item) {
-                        //            var product = _store[item.productId];
-                        //            if (product && item.price) {
-                        //                product.price[item.priceCatId] = item.price;
-                        //            }
-                        //        });
-
-                        //        Storage.request({
-                        //            type: 'POST',
-                        //            resource: 'product-stock',
-                        //            data: { 
-                        //                productIds: ids,
-                        //                depotId: depotId
-                        //            },
-                        //            success: function(resp) {
-    
-                        //                var stockCollection = Model.getFromStore('stock.depot.' + depotId);
-
-                        //                _.each(resp, function(item) {
-                        //                    var product = _store[item.productId];
-                        //                    if (product && item.quantity) {
-                        //                        product.stock[depotId] = item.quantity;
-                        //                    }
-                        //                    // Insert item into stock offline store
-                        //                    if (item.id) {
-                        //                        stockCollection.store[item.id] = item;
-                        //                    }
-                        //                });
-
-                        //                Storage.request({
-                        //                    type: 'POST',
-                        //                    resource: 'product-limit',
-                        //                    data: { productIds: ids },
-                        //                    success: function(resp) {
-
-                        //                        _.each(resp, function(item) {
-                        //                            var product = _store[item.productId];
-                        //                            if (product && item.categoryId) {
-                        //                                product.limit[item.categoryId] = item.limit;
-                        //                            }
-                        //                        });
- 
-                        //                        store.set('products.all', collection);
-                        //                        store.set('stock.depot.' + depotId, stockCollection);
-                        //                        yield(res, collection.count);
-    
-                        //                    },
-                        //                    error: onError
-                        //                });
-
-                        //            },
-                        //            error: onError
-                        //        });
-            
-                        //    },
-                        //    error: onError
-                        //});
-
-                    },
-                    error: onError
+                _.each(obj.collection, function(item) {
+                    collection.store[item.id] = item;
+                    collection.index[i++] = item.id;
                 });
-    
+
+                _.each(obj.stock, function(item) {
+                    stockCollection.store[item.id] = item;
+                });
+
+                store.set('products.all', collection);
+                store.set('stock.depot.' + depotId, stockCollection);
+
+                yield(obj.collection, obj.count);
+
             },
             error: onError
         });
@@ -1714,7 +1568,15 @@ $(document).ready(function() {
                             App.error(e);
                         }
                     },
-                    success: cont
+                    success: function(customer) {
+
+                        var collection = Model.getFromStore('customers.active.depot.' + depotId);
+                        collection.store[customer.id] = customer;
+                        store.set('customers.active.depot.' + depotId, collection);
+
+                        cont(customer);
+
+                    }
                 });
 
             });
@@ -1921,10 +1783,6 @@ $(document).ready(function() {
 
                 var cont = function(customer) {
 
-                    var collection = Model.getFromStore('customers.active.depot.' + depotId);
-                    collection.store[customer.id] = customer;
-                    store.set('customers.active.depot.' + depotId, collection);
-
                     var t = Handlebars.compile($('#customer-view').html());
                     $('#main').html(t(customer));
 
@@ -1964,7 +1822,16 @@ $(document).ready(function() {
                             App.error(e);
                         }
                     },
-                    success: cont
+                    success: function(customer) {
+
+                        var collection = Model.getFromStore('customers.active.depot.' + depotId);
+                        collection.store[customer.id] = customer;
+                        store.set('customers.active.depot.' + depotId, collection);
+
+                        cont(customer);
+
+                    }
+
                 });
     
             });
