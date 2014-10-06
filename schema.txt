@@ -685,6 +685,7 @@ ALTER TABLE ONLY settings
 
 COPY settings ( key, value ) FROM stdin;
 task	
+\.
 
 COPY region ( name) FROM stdin;
 Dodoma
