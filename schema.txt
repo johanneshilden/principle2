@@ -565,7 +565,7 @@ ALTER TABLE ONLY area_user
     ADD CONSTRAINT area_user_area_id_fkey FOREIGN KEY (area_id) REFERENCES area(id);
 
 ALTER TABLE ONLY area_user
-    ADD CONSTRAINT area_user_user_id_fkey FOREIGN KEY (user_id) REFERENCES sdrp_user(id);
+    ADD CONSTRAINT area_user_user_id_fkey FOREIGN KEY (user_id) REFERENCES sphere_user(id);
 
 ALTER TABLE ONLY area_user
     ADD CONSTRAINT unique_area_user UNIQUE (user_id, area_id);
@@ -595,7 +595,7 @@ ALTER TABLE ONLY vehicle
     ADD CONSTRAINT vehicle_depot_id_fkey FOREIGN KEY (depot_id) REFERENCES depot(id);
 
 ALTER TABLE ONLY vehicle
-    ADD CONSTRAINT vehicle_user_id_fkey FOREIGN KEY (user_id) REFERENCES sdrp_user(id);
+    ADD CONSTRAINT vehicle_user_id_fkey FOREIGN KEY (user_id) REFERENCES sphere_user(id);
 
 ALTER TABLE ONLY dispatch
     ADD CONSTRAINT dispatch_vehicle_id_fkey FOREIGN KEY (vehicle_id) REFERENCES vehicle(id);
@@ -728,21 +728,21 @@ COPY area (depot_id, name, region_id) FROM stdin;
 \.
 
 
-COPY sdrp_user (username, password, role, name) FROM stdin;
-depotman1	demo	depot-manager	Test User
-demouser	demo	call-center	BoB Dylan
-fstaff	4d6b016465c8d648ca14332f0f7e7fd2b639f3ca	field-staff	Salman Khan
-demo2	demo2	call-center	Nikolai Tesla
-demo3	demo3	call-center	Steven Seagal
-demo4	demo4	call-center	Dolph Lundgren
-demo5	demo5	call-center	Chuck Norris
-demo6	demo6	field-staff	Boris Karloff
-demo7	demo7	field-staff	Nicki Minaj
-driver1	123	driver	Papa Bear
-driver2	123	driver	Yogi Bear
-driver3	123	driver	Rick Hunter
-X	123	depot-manager	X Y
-\.
+-- COPY sdrp_user (username, password, role, name) FROM stdin;
+-- depotman1	demo	depot-manager	Test User
+-- demouser	demo	call-center	BoB Dylan
+-- fstaff	4d6b016465c8d648ca14332f0f7e7fd2b639f3ca	field-staff	Salman Khan
+-- demo2	demo2	call-center	Nikolai Tesla
+-- demo3	demo3	call-center	Steven Seagal
+-- demo4	demo4	call-center	Dolph Lundgren
+-- demo5	demo5	call-center	Chuck Norris
+-- demo6	demo6	field-staff	Boris Karloff
+-- demo7	demo7	field-staff	Nicki Minaj
+-- driver1	123	driver	Papa Bear
+-- driver2	123	driver	Yogi Bear
+-- driver3	123	driver	Rick Hunter
+-- X	123	depot-manager	X Y
+-- \.
 
 
 COPY weight_category (name) FROM stdin;
