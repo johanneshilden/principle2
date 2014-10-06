@@ -140,7 +140,19 @@ var Message = {
     ERROR_NO_PRICE_DATA: {
         text : 'No price information available.',
         type : 'error'
-     },
+    },
+    ERROR_PRODUCT_NOT_ADDED: {
+        text : 'Product "%1" could not be added to the order: %2',
+        type : 'error'
+    },
+    IMPORTANT_ORDER_INCOMPLETE: {
+        text : 'The order was created, however one or more products were not included.',
+        type : 'important'
+    },
+    NOTICE_ORDER_CREATED: {
+        text : 'The order was created.',
+        type : 'notice'
+    },
     NOTICE_PLEASE_CONNECT: {
         text : 'You must connect to the internet to complete this action.',
         type : 'notice'
@@ -1910,7 +1922,7 @@ $(document).ready(function() {
                                 user = App.user();
             
                             var data = {
-                                dateTime    : date.toISOString(),
+                                datetime    : date.toISOString(),
                                 customerId  : customerId,
                                 depotId     : depotId,
                                 userId      : user.id,
@@ -1924,7 +1936,26 @@ $(document).ready(function() {
                                 data: data,
                                 success: function(resp) {
 
-                                    window.location.hash = 'orders';
+                                    var errors = false;
+                                    var productCollection = Model.getFromStore('products.all');
+                                    var products = Array.isArray(resp.products) ? resp.products : [resp.products];
+
+                                    // Check for errors in response
+                                    _.each(products, function(item) {
+                                        if (false == item.status) {
+                                            var product = productCollection.store[item.productId];
+                                            App.notify('ERROR_PRODUCT_NOT_ADDED', product.name, item.message);
+                                            errors = true;
+                                        }
+                                    });
+
+                                    if (errors) {
+                                        App.notify('IMPORTANT_ORDER_INCOMPLETE');
+                                    } else {
+                                        App.notify('NOTICE_ORDER_CREATED');
+                                    }
+
+                                    window.location.hash = 'order/' + resp.id;
 
                                 },
                                 error: function(e) {
